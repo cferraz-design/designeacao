@@ -30,35 +30,36 @@ const ADMIN_NAME = 'Cassiana';
 const ROUND_DURATION_SECONDS = 60;
 
 const PLUS_A_WORDS = [
-  'Fagner', 'Cassiana', 'Gustavo Borges', 'Jaqueline', 'Rodrigo Hubner',
-  'Squad Design', 'Time Comercial', 'Time Produto', 'PO', 'Tech Lead',
-  'Severo', 'Estudante', 'Core',
+  // Pessoas da +A (apenas as que você passou)
+  'Fagner', 'Severo', 'Estudante', 'Core', 'Triva',
+  
+  // Produtos e Plataformas +A
   'AVALIA', 'Avalia Pro', 'Avalia Forms', 'LXP', 'Artmed', 'Catalogo',
   'Minha Biblioteca', 'Academic Portfolio', 'Sistema Acadêmico', 'Portal do Aluno',
   'Ambiente Virtual', 'Plataforma EAD', 'Trilhas de Aprendizagem',
-  'Jaleko', 'Orbita', 'Unidade de aprendizagem', 'Laboratório virtual', 'Objetos imersivos',
-  'Figma', 'FigJam', 'Jira', 'Confluence', 'Slack', 'Azure', 'DevOps',
-  'GitHub', 'VSCode', 'Design System', 'Component Library', 'Storybook',
-  'Sprint', 'Daily', 'Retrospectiva', 'Planning', 'Review', 'Refinamento',
-  'Backlog', 'User Story', 'Epic', 'Feature', 'Bug', 'Hotfix', 'Deploy',
-  'Discovery', 'Squad', 'OKR', 'KPI', 'Roadmap', 'Milestone',
-  'Cabelo Maluco', 'Pulse', 'Plano de carreira', 'Feedback 360', 'PDI',
-  'Happy Hour', 'Festa de fim de ano', 'Aniversário', 'Café com Design',
-  'Show and Tell', 'Brown Bag', 'Hackathon', 'Design Critique',
-  'Nada é escrito em pedra', 'Ecossistema', 'Sinergia', 'Alinhamento',
-  'Stakeholder', 'Trade-off', 'Benchmark', 'MVP', 'POC', 'Proof of Concept',
-  'Go Live', 'Rollout', 'Onboarding', 'Offboarding', 'Handoff',
+  'Jaleko', 'Orbita', 'Unidade de aprendizagem', 'Laboratório virtual', 'Objetos imersivos', 'EAD', 
+  'Algetec',
+  
+  // Ferramentas de Design e Desenvolvimento
+  'Figma', 'FigJam', 'Teams', "IA", "Loop"
+  'Design System', 'Storybook', 'Clarity', 'Analytics',
+  
+   
+  // Cultura +A
+  'Cabelo Maluco', 'Pulse', 'Plano de carreira', "Mão na massa"
+  
+  // Jargões +A
+  'Nada é escrito em pedra', 'Ecossistema',
+  
+  // Design e UX
   'Wireframe', 'Mockup', 'Protótipo', 'Persona', 'Jornada do Usuário',
   'Card Sorting', 'Teste de Usabilidade', 'Heurística', 'Acessibilidade',
-  'Design Thinking', 'Atomic Design', 'Mobile First', 'Responsivo',
-  'Microcopy', 'Tone of Voice', 'UI Kit', 'Pattern', 'Guideline',
-  'EAD', 'Ensino Híbrido', 'Metodologia Ativa', 'Gamificação',
-  'Aprendizagem Adaptativa', 'Curadoria de Conteúdo', 'Sequência Didática',
-  'Objeto de Aprendizagem', 'Rubrica', 'Competência', 'Habilidade',
-  'BNCC', 'Matriz Curricular', 'Plano de Ensino', 'Atividade Avaliativa',
-  'NPS', 'CSAT', 'Churn', 'Retenção', 'Conversão', 'Engajamento',
-  'Taxa de Abandono', 'Funil', 'Analytics', 'Heatmap', 'Session Recording',
-  'A/B Test', 'Cohort', 'Dashboard', 'Métrica de Vaidade'
+  'Design Thinking', 'Mobile First', 'Responsivo',
+  'Microcopy','Don Norman', 'Jakob Nielsen', 'Teste A/B', 'Usabilidade',
+  'Arquitetura da Informação', 'Steve Jobs', 'NPS', 'Pesquisa'
+  
+  
+ 
 ];
 
 const WORD_POOLS = {
@@ -85,19 +86,28 @@ const WORD_POOLS = {
     'tatuador', 'barista', 'sommelier', 'bartender', 'garçom', 'recepcionista',
     'secretária', 'contador', 'economista', 'administrador', 'gerente', 'supervisor',
     'coordenador', 'analista', 'assistente', 'estagiário', 'consultor', 'auditor',
-    'instrutor', 'palestrante', 'coach', 'mentor', 'tutor', 'monitor'
+    'instrutor', 'palestrante','Gil do Vigor', 'Juliette',
+    'Xuxa', 'Virginia Fonseca', 'Paolla Oliveira','Claudia Leitte', 'Anitta', 'Neymar', 'Pelé',
+    'Ronaldinho Gaúcho','Lula', 'Bolsonaro', 'Ayrton Senna', 'Silvio Santos', 'Faustão',
+    'Ivete Sangalo', 'Roberto Carlos', 'Pabllo Vittar', 'Whindersson Nunes',
+    'Tatá Werneck', 'Luciano Huck', 'Sabrina Sato','Grazi Massafera', 'Rodrigo Hilbert',
+    'Michael Jackson', 'Madonna', 'Beyoncé', 'Taylor Swift', 'Rihanna',
+    'Lady Gaga', 'Elvis Presley', 'Freddie Mercury', 'Cristiano Ronaldo',
+    'Lionel Messi', 'Usain Bolt', 'Barack Obama', 'Donald Trump',
+    'Papa Francisco', 'Albert Einstein', 'Stephen Hawking', 'Leonardo da Vinci', 
+    'Frida Kahlo', 'Marilyn Monroe'
   ],
   'Lazer': [
     'cinema', 'banda', 'artista', 'livro', 'país', 'reality show', 'série', 'filme',
-    'teatro', 'musical', 'festival', 'parque', 'praia', 'montanha', 'museu',
+    'teatro', 'musical', 'festival', 'parque', 'praia', 'montanha', 'museu', 'Big Brother',
     'exposição', 'concerto', 'show', 'karaokê', 'balada', 'restaurante', 'viagem',
     'acampamento', 'piquenique', 'churrasco', 'podcast', 'documentário', 'videogame',
-    'esporte', 'yoga', 'spa', 'boliche', 'cinema drive-in', 'escape room',
-    'paintball', 'kart', 'trilha', 'rapel', 'escalada', 'surf', 'mergulho',
-    'vôlei', 'futebol', 'basquete', 'tênis', 'natação', 'corrida', 'ciclismo',
+    'esporte', 'yoga', 'spa', 'boliche', 'paintball', 'kart', 'trilha', 'rapel', 'escalada', 'surf',
+    'mergulho','vôlei', 'futebol', 'basquete', 'tênis', 'natação', 'corrida', 'ciclismo',
     'patinação', 'skate', 'dança', 'zumba', 'pilates', 'crossfit', 'academia',
     'leitura', 'pintura', 'artesanato', 'jardinagem', 'culinária', 'fotografia',
-    'viagem de carro', 'cruzeiro', 'mochilão', 'camping', 'glamping', 'resort'
+    'viagem de carro', 'cruzeiro', 'mochilão', 'camping', 'glamping', 'resort', 'Humberto Carrão',
+    'Harry Potter', 'De volta para o Futuro', 'Minions', 'Titanic'
   ],
   'Objeto': [
     'escova', 'jarra', 'drone', 'teclado', 'violão', 'cadeira', 'mesa', 'lápis',

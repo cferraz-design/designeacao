@@ -41,12 +41,12 @@ const PLUS_A_WORDS = [
   'Algetec',
   
   // Ferramentas de Design e Desenvolvimento
-  'Figma', 'FigJam', 'Teams', "IA", "Loop"
+  'Figma', 'FigJam', 'Teams', "IA", 'Loop',
   'Design System', 'Storybook', 'Clarity', 'Analytics',
   
    
   // Cultura +A
-  'Cabelo Maluco', 'Pulse', 'Plano de carreira', "Mão na massa"
+  'Cabelo Maluco', 'Pulse', 'Plano de carreira', 'Mão na massa',
   
   // Jargões +A
   'Nada é escrito em pedra', 'Ecossistema',

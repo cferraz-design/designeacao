@@ -1,5 +1,24 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Timer, Users, Shuffle, Check, X, Eye, Crown, Gamepad2, Play, Pause, Lock, Unlock, RefreshCw } from 'lucide-react';
+import { Timer, Users, Shuffle, Check, X, Eye, Crown, Gamepad2, Play, Pause, Lock, Unlock, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, set, onValue, push, update, remove, serverTimestamp } from 'firebase/database';
+
+// ============================================================================
+// FIREBASE CONFIG
+// ============================================================================
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDb8FVRLO-r2Vhn0a_mCpIus3IH2iqe8Oc",
+  authDomain: "designeacao-213e6.firebaseapp.com",
+  databaseURL: "https://designeacao-213e6-default-rtdb.firebaseio.com",
+  projectId: "designeacao-213e6",
+  storageBucket: "designeacao-213e6.firebasestorage.app",
+  messagingSenderId: "741761433430",
+  appId: "1:741761433430:web:48ef895a7a5378126220f7"
+};
+
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 
 // ============================================================================
 // CONSTANTS & TYPES
@@ -11,49 +30,32 @@ const ADMIN_NAME = 'Cassiana';
 const ROUND_DURATION_SECONDS = 60;
 
 const PLUS_A_WORDS = [
-  // Pessoas e Lideranças
   'Fagner', 'Cassiana', 'Gustavo Borges', 'Jaqueline', 'Rodrigo Hubner',
   'Squad Design', 'Time Comercial', 'Time Produto', 'PO', 'Tech Lead',
   'Severo', 'Estudante', 'Core',
-  
-  // Produtos e Plataformas
   'AVALIA', 'Avalia Pro', 'Avalia Forms', 'LXP', 'Artmed', 'Catalogo',
   'Minha Biblioteca', 'Academic Portfolio', 'Sistema Acadêmico', 'Portal do Aluno',
   'Ambiente Virtual', 'Plataforma EAD', 'Trilhas de Aprendizagem',
   'Jaleko', 'Orbita', 'Unidade de aprendizagem', 'Laboratório virtual', 'Objetos imersivos',
-  
-  // Ferramentas e Tecnologias
   'Figma', 'FigJam', 'Jira', 'Confluence', 'Slack', 'Azure', 'DevOps',
   'GitHub', 'VSCode', 'Design System', 'Component Library', 'Storybook',
-  
-  // Processos e Metodologias
   'Sprint', 'Daily', 'Retrospectiva', 'Planning', 'Review', 'Refinamento',
   'Backlog', 'User Story', 'Epic', 'Feature', 'Bug', 'Hotfix', 'Deploy',
   'Discovery', 'Squad', 'OKR', 'KPI', 'Roadmap', 'Milestone',
-  
-  // Cultura e Eventos
   'Cabelo Maluco', 'Pulse', 'Plano de carreira', 'Feedback 360', 'PDI',
   'Happy Hour', 'Festa de fim de ano', 'Aniversário', 'Café com Design',
   'Show and Tell', 'Brown Bag', 'Hackathon', 'Design Critique',
-  
-  // Jargões e Expressões +A
   'Nada é escrito em pedra', 'Ecossistema', 'Sinergia', 'Alinhamento',
   'Stakeholder', 'Trade-off', 'Benchmark', 'MVP', 'POC', 'Proof of Concept',
   'Go Live', 'Rollout', 'Onboarding', 'Offboarding', 'Handoff',
-  
-  // Design e UX
   'Wireframe', 'Mockup', 'Protótipo', 'Persona', 'Jornada do Usuário',
   'Card Sorting', 'Teste de Usabilidade', 'Heurística', 'Acessibilidade',
   'Design Thinking', 'Atomic Design', 'Mobile First', 'Responsivo',
   'Microcopy', 'Tone of Voice', 'UI Kit', 'Pattern', 'Guideline',
-  
-  // Educação e Pedagogia
   'EAD', 'Ensino Híbrido', 'Metodologia Ativa', 'Gamificação',
   'Aprendizagem Adaptativa', 'Curadoria de Conteúdo', 'Sequência Didática',
   'Objeto de Aprendizagem', 'Rubrica', 'Competência', 'Habilidade',
   'BNCC', 'Matriz Curricular', 'Plano de Ensino', 'Atividade Avaliativa',
-  
-  // Métricas e Análise
   'NPS', 'CSAT', 'Churn', 'Retenção', 'Conversão', 'Engajamento',
   'Taxa de Abandono', 'Funil', 'Analytics', 'Heatmap', 'Session Recording',
   'A/B Test', 'Cohort', 'Dashboard', 'Métrica de Vaidade'
@@ -135,9 +137,7 @@ const WORD_POOLS = {
 function generateWord(categoria, usedWords) {
   if (categoria === '+A') {
     const available = PLUS_A_WORDS.filter(word => !usedWords.includes(word));
-    if (available.length === 0) {
-      throw new Error('Lista +A esgotada');
-    }
+    if (available.length === 0) throw new Error('Lista +A esgotada');
     return available[Math.floor(Math.random() * available.length)];
   }
 
@@ -230,9 +230,12 @@ function LoginScreen({ onLogin }) {
             🎭 Imagem e Ação
           </h1>
           <p className="text-slate-600">Identifique-se para começar a jogar</p>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <Wifi className="w-4 h-4 text-green-600" />
+            <span className="text-xs text-green-600 font-medium">Multiplayer Online</span>
+          </div>
         </div>
 
-        {/* Role Selection */}
         <div className="mb-6">
           <h2 className="text-lg font-bold text-slate-800 mb-3">Selecione seu papel:</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -286,11 +289,10 @@ function LoginScreen({ onLogin }) {
           </div>
         </div>
 
-        {/* Player Selection (only if role is player) */}
         {selectedRole === 'player' && (
           <div className="mb-6 bg-purple-50 rounded-xl p-4 border-2 border-purple-200">
             <h3 className="text-md font-bold text-purple-800 mb-3">
-              Quem vai jogar esta rodada? (pode selecionar mais de um)
+              Quem vai jogar? (pode selecionar mais de um)
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {JOGADORES.map(name => (
@@ -318,8 +320,7 @@ function LoginScreen({ onLogin }) {
         {selectedRole === 'admin' && (
           <div className="mb-6 bg-orange-50 rounded-xl p-4 border-2 border-orange-200">
             <p className="text-sm text-orange-800">
-              <strong>Cassiana</strong>, você terá acesso total ao jogo: pode ver todos os cards, 
-              controlar o timer e gerenciar as rodadas.
+              <strong>Cassiana</strong>, você terá acesso total ao jogo e verá todos os jogadores online em tempo real!
             </p>
           </div>
         )}
@@ -343,32 +344,70 @@ function LoginScreen({ onLogin }) {
   );
 }
 
-// Timer Component with Play/Pause
-function Timer60s({ isRunning, onToggle, onComplete, timerKey }) {
-  const [timeLeft, setTimeLeft] = useState(ROUND_DURATION_SECONDS);
+// Online Players Panel
+function OnlinePlayersPanel({ players }) {
+  if (!players || Object.keys(players).length === 0) {
+    return (
+      <div className="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">
+        <div className="flex items-center gap-2 mb-2">
+          <WifiOff className="w-4 h-4 text-slate-400" />
+          <h3 className="text-sm font-bold text-slate-600">Jogadores Online</h3>
+        </div>
+        <p className="text-xs text-slate-500">Nenhum jogador online</p>
+      </div>
+    );
+  }
+
+  const playersList = Object.values(players);
+
+  return (
+    <div className="bg-green-50 rounded-xl p-4 border-2 border-green-200">
+      <div className="flex items-center gap-2 mb-3">
+        <Wifi className="w-4 h-4 text-green-600 animate-pulse" />
+        <h3 className="text-sm font-bold text-green-800">
+          Jogadores Online ({playersList.length})
+        </h3>
+      </div>
+      <div className="space-y-2">
+        {playersList.map((player, idx) => (
+          <div
+            key={idx}
+            className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-green-200"
+          >
+            <div className="flex items-center gap-2">
+              {player.role === 'admin' && <Crown className="w-4 h-4 text-orange-600" />}
+              {player.role === 'player' && <Gamepad2 className="w-4 h-4 text-purple-600" />}
+              {player.role === 'spectator' && <Eye className="w-4 h-4 text-blue-600" />}
+              <span className="text-sm font-medium text-slate-800">
+                {player.names?.join(', ') || 'Anônimo'}
+              </span>
+            </div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Timer Component
+function Timer60s({ gameState, onToggle }) {
+  const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
-    setTimeLeft(ROUND_DURATION_SECONDS);
-  }, [timerKey]);
-
-  useEffect(() => {
-    if (!isRunning) return;
-
-    if (timeLeft <= 0) {
-      onComplete?.();
+    if (!gameState?.timerStartTime || !gameState?.timerRunning) {
+      setTimeLeft(gameState?.timerValue || ROUND_DURATION_SECONDS);
       return;
     }
 
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        const newTime = Math.max(0, prev - 1);
-        if (newTime === 0) onComplete?.();
-        return newTime;
-      });
-    }, 1000);
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - gameState.timerStartTime) / 1000);
+      const remaining = Math.max(0, ROUND_DURATION_SECONDS - elapsed);
+      setTimeLeft(remaining);
+    }, 100);
 
-    return () => clearInterval(timer);
-  }, [timeLeft, isRunning, onComplete]);
+    return () => clearInterval(interval);
+  }, [gameState]);
 
   const percentage = (timeLeft / ROUND_DURATION_SECONDS) * 100;
   const color = timeLeft > 30 ? 'bg-green-500' : timeLeft > 10 ? 'bg-yellow-500' : 'bg-red-500';
@@ -384,12 +423,12 @@ function Timer60s({ isRunning, onToggle, onComplete, timerKey }) {
           <button
             onClick={onToggle}
             className={`p-2 rounded-lg transition-all ${
-              isRunning 
-                ? 'bg-orange-100 hover:bg-orange-200 text-orange-700' 
+              gameState?.timerRunning
+                ? 'bg-orange-100 hover:bg-orange-200 text-orange-700'
                 : 'bg-green-100 hover:bg-green-200 text-green-700'
             }`}
           >
-            {isRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+            {gameState?.timerRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
           </button>
           <span className={`text-2xl font-bold ${timeLeft <= 10 ? 'text-red-600 animate-pulse' : 'text-slate-800'}`}>
             {timeLeft}s
@@ -398,7 +437,7 @@ function Timer60s({ isRunning, onToggle, onComplete, timerKey }) {
       </div>
       <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
         <div
-          className={`h-full ${color} transition-all duration-1000 ease-linear`}
+          className={`h-full ${color} transition-all duration-300 ease-linear`}
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -425,10 +464,12 @@ function CategoryBadge({ categoria }) {
   );
 }
 
-// Card Display - Shows different views based on role
-function CardDisplay({ card, userRole, userNames, isTimerRunning, onToggleTimer, timerKey, onRegenerate, onMarkWordAsUsed }) {
-  const canSeeCard = userRole === 'admin' || 
-                     (userRole === 'player' && card.jogadores.some(j => userNames.includes(j)));
+// Card Display
+function CardDisplay({ card, userRole, userNames, gameState, onToggleTimer, onRegenerate, onMarkWordAsUsed }) {
+  if (!card) return null;
+
+  const canSeeCard = userRole === 'admin' ||
+    (userRole === 'player' && card.jogadores?.some(j => userNames?.includes(j)));
 
   if (!canSeeCard) {
     return (
@@ -437,12 +478,12 @@ function CardDisplay({ card, userRole, userNames, isTimerRunning, onToggleTimer,
           <Lock className="w-16 h-16 text-slate-400 mx-auto mb-4" />
           <h3 className="text-2xl font-black text-slate-600 mb-2">Card Oculto</h3>
           <p className="text-slate-500">
-            Apenas {card.jogadores.join(' e ')} {card.jogadores.length > 1 ? 'podem' : 'pode'} ver este card
+            Apenas {card.jogadores?.join(' e ')} podem ver este card
           </p>
           <div className="mt-6 flex items-center justify-center gap-4">
             <CategoryBadge categoria={card.categoria} />
             <span className="text-sm text-slate-600">
-              Jogando: <strong>{card.jogadores.join(' e ')}</strong>
+              Jogando: <strong>{card.jogadores?.join(' e ')}</strong>
             </span>
           </div>
         </div>
@@ -459,7 +500,7 @@ function CardDisplay({ card, userRole, userNames, isTimerRunning, onToggleTimer,
           </div>
           <div>
             <h3 className="text-2xl font-black text-slate-800">Card Revelado</h3>
-            <p className="text-sm text-slate-600">{card.jogadores.join(' e ')}</p>
+            <p className="text-sm text-slate-600">{card.jogadores?.join(' e ')}</p>
           </div>
         </div>
         <CategoryBadge categoria={card.categoria} />
@@ -467,11 +508,11 @@ function CardDisplay({ card, userRole, userNames, isTimerRunning, onToggleTimer,
 
       <div className="bg-white rounded-xl p-6 mb-4 border-2 border-slate-200">
         <div className="text-center space-y-4">
-          {card.palavras.map((palavra, idx) => (
+          {card.palavras?.map((palavra, idx) => (
             <div key={idx} className="relative">
               <div className={`text-5xl font-black transition-all ${
-                card.palavrasUsadas?.[idx] 
-                  ? 'text-slate-300 line-through' 
+                card.palavrasUsadas?.[idx]
+                  ? 'text-slate-300 line-through'
                   : 'text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600'
               }`}>
                 {palavra}
@@ -479,7 +520,6 @@ function CardDisplay({ card, userRole, userNames, isTimerRunning, onToggleTimer,
               {card.palavras.length > 1 && (
                 <div className="text-xs text-slate-500 mt-1">Opção {idx + 1}</div>
               )}
-              {/* Botão para marcar palavra como usada */}
               {(userRole === 'admin' || userRole === 'player') && (
                 <button
                   onClick={() => onMarkWordAsUsed(idx)}
@@ -494,7 +534,7 @@ function CardDisplay({ card, userRole, userNames, isTimerRunning, onToggleTimer,
               )}
             </div>
           ))}
-          
+
           <div className="inline-flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-full border-2 border-yellow-200 mt-4">
             <span className="text-2xl">⭐</span>
             <span className="text-2xl font-bold text-yellow-700">{card.pontuacao} pontos</span>
@@ -509,22 +549,18 @@ function CardDisplay({ card, userRole, userNames, isTimerRunning, onToggleTimer,
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
           >
             <RefreshCw className="w-5 h-5" />
-            Gerar Nova Palavra (se estiver difícil)
+            Gerar Nova Palavra
           </button>
         </div>
       )}
 
-      <Timer60s 
-        isRunning={isTimerRunning} 
-        onToggle={onToggleTimer}
-        timerKey={timerKey}
-      />
+      <Timer60s gameState={gameState} onToggle={onToggleTimer} />
     </div>
   );
 }
 
-// Game Setup - Category Selection Only
-function GameSetup({ onGenerateCard, userRole, allPlayers }) {
+// Game Setup
+function GameSetup({ onGenerateCard, allPlayers }) {
   const [selectedCategoria, setSelectedCategoria] = useState('');
   const [numPalavras, setNumPalavras] = useState(1);
   const [showToast, setShowToast] = useState('');
@@ -554,7 +590,6 @@ function GameSetup({ onGenerateCard, userRole, allPlayers }) {
         </div>
       )}
 
-      {/* Current Players Info */}
       {allPlayers.length > 0 && (
         <div className="bg-purple-50 rounded-2xl shadow-lg p-6 mb-6 border-2 border-purple-200">
           <div className="flex items-center gap-2 mb-2">
@@ -562,15 +597,11 @@ function GameSetup({ onGenerateCard, userRole, allPlayers }) {
             <h2 className="text-lg font-bold text-purple-800">Jogadores Ativos</h2>
           </div>
           <p className="text-slate-700">
-            <strong>{allPlayers.join(', ')}</strong> {allPlayers.length > 1 ? 'podem' : 'pode'} ver os cards gerados
-          </p>
-          <p className="text-sm text-slate-600 mt-2">
-            💡 Espectadores não conseguem ver os cards revelados
+            <strong>{allPlayers.join(', ')}</strong> podem ver os cards gerados
           </p>
         </div>
       )}
 
-      {/* Category Selection */}
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border-2 border-slate-200">
         <h2 className="text-lg font-bold text-slate-800 mb-4">Selecionar Categoria</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -590,7 +621,6 @@ function GameSetup({ onGenerateCard, userRole, allPlayers }) {
         </div>
       </div>
 
-      {/* Number of Words */}
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border-2 border-slate-200">
         <h2 className="text-lg font-bold text-slate-800 mb-4">Quantas palavras no card?</h2>
         <div className="grid grid-cols-2 gap-3">
@@ -612,12 +642,11 @@ function GameSetup({ onGenerateCard, userRole, allPlayers }) {
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            2 palavras (para escolher)
+            2 palavras
           </button>
         </div>
       </div>
 
-      {/* Generate Button */}
       <button
         onClick={handleGenerate}
         disabled={!selectedCategoria}
@@ -625,118 +654,6 @@ function GameSetup({ onGenerateCard, userRole, allPlayers }) {
       >
         🎲 Gerar Card
       </button>
-    </div>
-  );
-}
-
-// Admin Dashboard
-function AdminDashboard({ cards, onMarkAsUsed, onReshuffle, onViewCard }) {
-  const [filter, setFilter] = useState('all');
-
-  const filteredCards = cards.filter(card => {
-    if (filter === 'used') return card.usado;
-    if (filter === 'unused') return !card.usado;
-    return true;
-  });
-
-  return (
-    <div className="max-w-7xl mx-auto px-6">
-      <div className="flex gap-3 mb-6">
-        {[
-          { value: 'all', label: 'Todos' },
-          { value: 'unused', label: 'Não Usados' },
-          { value: 'used', label: 'Usados' }
-        ].map(({ value, label }) => (
-          <button
-            key={value}
-            onClick={() => setFilter(value)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filter === value
-                ? 'bg-orange-600 text-white shadow-md'
-                : 'bg-white text-slate-700 border-2 border-slate-200 hover:border-orange-300'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-        <div className="ml-auto text-slate-600 font-medium">
-          Total: {cards.length} cards
-        </div>
-      </div>
-
-      <div className="grid gap-4">
-        {filteredCards.length === 0 ? (
-          <div className="bg-white rounded-xl p-12 text-center border-2 border-slate-200">
-            <p className="text-slate-500 text-lg">Nenhum card encontrado</p>
-          </div>
-        ) : (
-          filteredCards.map(card => (
-            <div
-              key={card.card_id}
-              className={`bg-white rounded-xl p-6 border-2 shadow-md transition-all ${
-                card.usado ? 'border-slate-300 opacity-60' : 'border-slate-200'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <CategoryBadge categoria={card.categoria} />
-                    <span className="text-sm text-slate-500">{card.card_id}</span>
-                    {card.usado && (
-                      <span className="px-2 py-1 bg-slate-200 text-slate-600 rounded text-xs font-medium">
-                        ✓ Usado
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-3">
-                    <div>
-                      <p className="text-xs text-slate-500 mb-1">Jogadores</p>
-                      <p className="font-semibold text-slate-800">{card.jogadores.join(', ')}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 mb-1">Palavras</p>
-                      <p className="font-semibold text-slate-800">{card.palavras.join(', ')}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 mb-1">Pontuação</p>
-                      <p className="font-semibold text-slate-800">{card.pontuacao} pontos</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 mb-1">Round</p>
-                      <p className="font-semibold text-slate-800">#{card.round}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => onViewCard(card)}
-                    className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
-                    title="Visualizar"
-                  >
-                    <Eye className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => onMarkAsUsed(card.card_id)}
-                    className="p-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors"
-                    title={card.usado ? 'Marcar como não usado' : 'Marcar como usado'}
-                  >
-                    {card.usado ? <X className="w-5 h-5" /> : <Check className="w-5 h-5" />}
-                  </button>
-                  <button
-                    onClick={() => onReshuffle(card.card_id)}
-                    className="p-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg transition-colors"
-                    title="Re-sortear"
-                  >
-                    <Shuffle className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
     </div>
   );
 }
@@ -749,170 +666,130 @@ export default function ImagemAcaoGame() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState('');
   const [userNames, setUserNames] = useState([]);
-  const [allPlayers, setAllPlayers] = useState([]); // Lista de todos os jogadores identificados
-  const [screen, setScreen] = useState('game');
-  const [cards, setCards] = useState([]);
-  const [currentCard, setCurrentCard] = useState(null);
+  const [userId, setUserId] = useState(null);
+  const [onlinePlayers, setOnlinePlayers] = useState({});
+  const [gameState, setGameState] = useState(null);
+  const [allPlayers, setAllPlayers] = useState([]);
   const [usedWords, setUsedWords] = useState({
     'Difícil': [], 'Pessoas': [], 'Lazer': [], 'Mix': [],
     'Objeto': [], 'Ação': [], '+A': []
   });
-  const [timerKey, setTimerKey] = useState(0);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [round, setRound] = useState(1);
 
-  const handleLogin = (role, names) => {
+  // Listen to online players
+  useEffect(() => {
+    const playersRef = ref(database, 'players');
+    const unsubscribe = onValue(playersRef, (snapshot) => {
+      const players = snapshot.val() || {};
+      setOnlinePlayers(players);
+
+      // Extract all player names
+      const names = [];
+      Object.values(players).forEach(player => {
+        if (player.role === 'player' && player.names) {
+          names.push(...player.names);
+        }
+      });
+      setAllPlayers([...new Set(names)]);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to game state
+  useEffect(() => {
+    const gameRef = ref(database, 'gameState');
+    const unsubscribe = onValue(gameRef, (snapshot) => {
+      const state = snapshot.val();
+      if (state) {
+        setGameState(state);
+        if (state.usedWords) {
+          setUsedWords(state.usedWords);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async (role, names) => {
+    const newUserId = push(ref(database, 'players')).key;
+    await set(ref(database, `players/${newUserId}`), {
+      role,
+      names,
+      timestamp: serverTimestamp()
+    });
+
+    setUserId(newUserId);
     setUserRole(role);
     setUserNames(names);
     setIsLoggedIn(true);
-    
-    // Se for jogador, adiciona à lista de jogadores ativos
-    if (role === 'player') {
-      setAllPlayers(prev => {
-        const newPlayers = [...prev];
-        names.forEach(name => {
-          if (!newPlayers.includes(name)) {
-            newPlayers.push(name);
-          }
-        });
-        return newPlayers;
-      });
-    }
   };
 
-  const handleLogout = () => {
-    // Remove jogadores que estão fazendo logout
-    if (userRole === 'player') {
-      setAllPlayers(prev => prev.filter(p => !userNames.includes(p)));
+  const handleLogout = async () => {
+    if (userId) {
+      await remove(ref(database, `players/${userId}`));
     }
-    
     setIsLoggedIn(false);
     setUserRole('');
     setUserNames([]);
-    setScreen('game');
+    setUserId(null);
   };
 
-  const generateCard = useCallback((jogadores, categoria, numPalavras) => {
+  const generateCard = useCallback(async (jogadores, categoria, numPalavras) => {
     const palavras = [];
     for (let i = 0; i < numPalavras; i++) {
       const palavra = generateWord(categoria, usedWords[categoria]);
       palavras.push(palavra);
-      setUsedWords(prev => ({
-        ...prev,
-        [categoria]: [...prev[categoria], palavra]
-      }));
     }
 
     const pontuacao = generateScore();
-    const card_id = generateCardId(categoria, round);
+    const card_id = generateCardId(categoria, gameState?.round || 1);
 
     const newCard = {
-      timestamp: new Date().toISOString(),
-      round,
+      timestamp: Date.now(),
+      round: (gameState?.round || 0) + 1,
       jogadores,
       categoria,
       palavras,
-      palavrasUsadas: {}, // Inicializa objeto para rastrear palavras usadas
+      palavrasUsadas: {},
       pontuacao,
       card_id,
       admin: ADMIN_NAME,
-      usado: false,
-      duracao_segundos: ROUND_DURATION_SECONDS,
     };
 
-    setCards(prev => [...prev, newCard]);
-    setCurrentCard(newCard);
-    setTimerKey(prev => prev + 1);
-    setIsTimerRunning(false);
-    setRound(prev => prev + 1);
-  }, [usedWords, round]);
-
-  const handleRegenerateWord = useCallback(() => {
-    if (!currentCard) return;
-
-    // Remove old words from used list
-    currentCard.palavras.forEach(palavra => {
-      setUsedWords(prev => ({
-        ...prev,
-        [currentCard.categoria]: prev[currentCard.categoria].filter(w => w !== palavra)
-      }));
+    const newUsedWords = { ...usedWords };
+    palavras.forEach(p => {
+      if (!newUsedWords[categoria]) newUsedWords[categoria] = [];
+      newUsedWords[categoria].push(p);
     });
 
-    // Generate new words
-    const newPalavras = [];
-    for (let i = 0; i < currentCard.palavras.length; i++) {
-      const palavra = generateWord(currentCard.categoria, usedWords[currentCard.categoria]);
-      newPalavras.push(palavra);
-      setUsedWords(prev => ({
-        ...prev,
-        [currentCard.categoria]: [...prev[currentCard.categoria], palavra]
-      }));
-    }
-
-    const newPontuacao = generateScore();
-    const newCardId = generateCardId(currentCard.categoria, currentCard.round);
-
-    const updatedCard = {
-      ...currentCard,
-      palavras: newPalavras,
-      pontuacao: newPontuacao,
-      card_id: newCardId,
-      palavrasUsadas: {}, // Reset palavras usadas
-    };
-
-    setCards(prev =>
-      prev.map(c => c.card_id === currentCard.card_id ? updatedCard : c)
-    );
-    setCurrentCard(updatedCard);
-    setTimerKey(prev => prev + 1);
-    setIsTimerRunning(false);
-  }, [currentCard, usedWords]);
-
-  const handleMarkWordAsUsed = useCallback((wordIndex) => {
-    if (!currentCard) return;
-
-    const updatedCard = {
-      ...currentCard,
-      palavrasUsadas: {
-        ...currentCard.palavrasUsadas,
-        [wordIndex]: !currentCard.palavrasUsadas[wordIndex]
-      }
-    };
-
-    setCards(prev =>
-      prev.map(c => c.card_id === currentCard.card_id ? updatedCard : c)
-    );
-    setCurrentCard(updatedCard);
-  }, [currentCard]);
-
-  const handleMarkAsUsed = useCallback((cardId) => {
-    setCards(prev =>
-      prev.map(c => c.card_id === cardId ? { ...c, usado: !c.usado } : c)
-    );
-    if (currentCard?.card_id === cardId) {
-      setCurrentCard(prev => prev ? { ...prev, usado: !prev.usado } : null);
-    }
-  }, [currentCard]);
-
-  const handleReshuffle = useCallback((cardId) => {
-    const card = cards.find(c => c.card_id === cardId);
-    if (!card) return;
-
-    card.palavras.forEach(palavra => {
-      setUsedWords(prev => ({
-        ...prev,
-        [card.categoria]: prev[card.categoria].filter(w => w !== palavra)
-      }));
+    await update(ref(database, 'gameState'), {
+      currentCard: newCard,
+      round: newCard.round,
+      usedWords: newUsedWords,
+      timerValue: ROUND_DURATION_SECONDS,
+      timerRunning: false,
+      timerStartTime: null
     });
+  }, [usedWords, gameState]);
 
+  const handleToggleTimer = async () => {
+    const newRunning = !gameState?.timerRunning;
+    await update(ref(database, 'gameState'), {
+      timerRunning: newRunning,
+      timerStartTime: newRunning ? Date.now() : null
+    });
+  };
+
+  const handleRegenerateWord = async () => {
+    if (!gameState?.currentCard) return;
+
+    const card = gameState.currentCard;
     const newPalavras = [];
+
     for (let i = 0; i < card.palavras.length; i++) {
       const palavra = generateWord(card.categoria, usedWords[card.categoria]);
       newPalavras.push(palavra);
-      setUsedWords(prev => ({
-        ...prev,
-        [card.categoria]: [...prev[card.categoria], palavra]
-      }));
     }
 
     const newPontuacao = generateScore();
@@ -923,24 +800,46 @@ export default function ImagemAcaoGame() {
       palavras: newPalavras,
       pontuacao: newPontuacao,
       card_id: newCardId,
-      usado: false,
-      palavrasUsadas: {} // Reset palavras usadas no reshuffle
+      palavrasUsadas: {}
     };
 
-    setCards(prev =>
-      prev.map(c => c.card_id === cardId ? updatedCard : c)
-    );
+    const newUsedWords = { ...usedWords };
+    newPalavras.forEach(p => {
+      if (!newUsedWords[card.categoria]) newUsedWords[card.categoria] = [];
+      newUsedWords[card.categoria].push(p);
+    });
 
-    if (currentCard?.card_id === cardId) {
-      setCurrentCard(updatedCard);
-      setTimerKey(prev => prev + 1);
-    }
-  }, [cards, currentCard, usedWords]);
+    await update(ref(database, 'gameState'), {
+      currentCard: updatedCard,
+      usedWords: newUsedWords,
+      timerValue: ROUND_DURATION_SECONDS,
+      timerRunning: false,
+      timerStartTime: null
+    });
+  };
 
-  const handleViewCard = useCallback((card) => {
-    setCurrentCard(card);
-    setScreen('game');
-  }, []);
+  const handleMarkWordAsUsed = async (wordIndex) => {
+    if (!gameState?.currentCard) return;
+
+    const updatedCard = {
+      ...gameState.currentCard,
+      palavrasUsadas: {
+        ...gameState.currentCard.palavrasUsadas,
+        [wordIndex]: !gameState.currentCard.palavrasUsadas?.[wordIndex]
+      }
+    };
+
+    await update(ref(database, 'gameState/currentCard'), updatedCard);
+  };
+
+  const handleFinishRound = async () => {
+    await update(ref(database, 'gameState'), {
+      currentCard: null,
+      timerValue: ROUND_DURATION_SECONDS,
+      timerRunning: false,
+      timerStartTime: null
+    });
+  };
 
   if (!isLoggedIn) {
     return <LoginScreen onLogin={handleLogin} />;
@@ -948,7 +847,6 @@ export default function ImagemAcaoGame() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
       <div className="bg-white border-b-2 border-slate-200 px-6 py-4 shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -976,96 +874,63 @@ export default function ImagemAcaoGame() {
               )}
             </div>
           </div>
-          
-          <div className="flex gap-2">
-            {userRole === 'admin' && (
-              <>
-                <button
-                  onClick={() => setScreen('game')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    screen === 'game'
-                      ? 'bg-purple-600 text-white shadow-md'
-                      : 'bg-white text-slate-700 border-2 border-slate-200 hover:border-purple-300'
-                  }`}
-                >
-                  <Gamepad2 className="w-4 h-4" />
-                  Jogo
-                </button>
-                <button
-                  onClick={() => setScreen('admin')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    screen === 'admin'
-                      ? 'bg-orange-600 text-white shadow-md'
-                      : 'bg-white text-slate-700 border-2 border-slate-200 hover:border-orange-300'
-                  }`}
-                >
-                  <Crown className="w-4 h-4" />
-                  Dashboard
-                </button>
-              </>
-            )}
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium transition-colors"
-            >
-              Sair
-            </button>
-          </div>
+
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium transition-colors"
+          >
+            Sair
+          </button>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="py-8">
-        {screen === 'game' ? (
-          <div className="space-y-6">
-            {!currentCard && (userRole === 'admin' || userRole === 'player') && (
-              <GameSetup onGenerateCard={generateCard} userRole={userRole} allPlayers={allPlayers} />
-            )}
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid md:grid-cols-[1fr_300px] gap-6">
+            <div>
+              {!gameState?.currentCard && (userRole === 'admin' || userRole === 'player') && (
+                <GameSetup onGenerateCard={generateCard} allPlayers={allPlayers} />
+              )}
 
-            {currentCard && (
-              <div className="max-w-4xl mx-auto px-6">
-                <CardDisplay
-                  card={currentCard}
-                  userRole={userRole}
-                  userNames={userNames}
-                  isTimerRunning={isTimerRunning}
-                  onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
-                  timerKey={timerKey}
-                  onRegenerate={handleRegenerateWord}
-                  onMarkWordAsUsed={handleMarkWordAsUsed}
-                />
+              {gameState?.currentCard && (
+                <div>
+                  <CardDisplay
+                    card={gameState.currentCard}
+                    userRole={userRole}
+                    userNames={userNames}
+                    gameState={gameState}
+                    onToggleTimer={handleToggleTimer}
+                    onRegenerate={handleRegenerateWord}
+                    onMarkWordAsUsed={handleMarkWordAsUsed}
+                  />
 
-                {(userRole === 'admin' || userRole === 'player') && (
-                  <div className="mt-6">
-                    <button
-                      onClick={() => setCurrentCard(null)}
-                      className="w-full bg-slate-600 hover:bg-slate-700 text-white py-3 rounded-xl font-medium transition-colors"
-                    >
-                      Finalizar Rodada e Gerar Novo Card
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+                  {(userRole === 'admin' || userRole === 'player') && (
+                    <div className="mt-6">
+                      <button
+                        onClick={handleFinishRound}
+                        className="w-full bg-slate-600 hover:bg-slate-700 text-white py-3 rounded-xl font-medium transition-colors"
+                      >
+                        Finalizar Rodada e Gerar Novo Card
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {!currentCard && userRole === 'spectator' && (
-              <div className="max-w-4xl mx-auto px-6">
+              {!gameState?.currentCard && userRole === 'spectator' && (
                 <div className="bg-white rounded-2xl shadow-lg p-12 text-center border-2 border-slate-200">
                   <Eye className="w-16 h-16 text-slate-400 mx-auto mb-4" />
                   <h3 className="text-2xl font-bold text-slate-700 mb-2">Aguardando próxima rodada</h3>
                   <p className="text-slate-500">Um novo card será gerado em breve</p>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <OnlinePlayersPanel players={onlinePlayers} />
+            </div>
           </div>
-        ) : (
-          <AdminDashboard
-            cards={cards}
-            onMarkAsUsed={handleMarkAsUsed}
-            onReshuffle={handleReshuffle}
-            onViewCard={handleViewCard}
-          />
-        )}
+        </div>
       </div>
     </div>
   );

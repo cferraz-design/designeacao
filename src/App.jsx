@@ -345,7 +345,7 @@ function LoginScreen({ onLogin }) {
 }
 
 // Online Players Panel
-function OnlinePlayersPanel({ players }) {
+function OnlinePlayersPanel({ players, onClearDuplicates }) {
   if (!players || Object.keys(players).length === 0) {
     return (
       <div className="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">
@@ -358,20 +358,31 @@ function OnlinePlayersPanel({ players }) {
     );
   }
 
-  const playersList = Object.values(players);
+  const playersList = Object.entries(players);
 
   return (
     <div className="bg-green-50 rounded-xl p-4 border-2 border-green-200">
-      <div className="flex items-center gap-2 mb-3">
-        <Wifi className="w-4 h-4 text-green-600 animate-pulse" />
-        <h3 className="text-sm font-bold text-green-800">
-          Jogadores Online ({playersList.length})
-        </h3>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Wifi className="w-4 h-4 text-green-600 animate-pulse" />
+          <h3 className="text-sm font-bold text-green-800">
+            Jogadores Online ({playersList.length})
+          </h3>
+        </div>
+        {onClearDuplicates && (
+          <button
+            onClick={onClearDuplicates}
+            className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors"
+            title="Limpar duplicatas"
+          >
+            Limpar
+          </button>
+        )}
       </div>
       <div className="space-y-2">
-        {playersList.map((player, idx) => (
+        {playersList.map(([id, player]) => (
           <div
-            key={idx}
+            key={id}
             className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-green-200"
           >
             <div className="flex items-center gap-2">
@@ -560,32 +571,56 @@ function CardDisplay({ card, userRole, userNames, gameState, onToggleTimer, onRe
 }
 
 // Game Setup
-function GameSetup({ onGenerateCard, allPlayers }) {
+function GameSetup({ onGenerateCard, allPlayers, hasActiveCard }) {
   const [selectedCategoria, setSelectedCategoria] = useState('');
   const [numPalavras, setNumPalavras] = useState(1);
   const [showToast, setShowToast] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!selectedCategoria) {
       setShowToast('Selecione uma categoria');
       setTimeout(() => setShowToast(''), 3000);
       return;
     }
 
+    if (hasActiveCard) {
+      setShowToast('Já existe um card ativo! Finalize a rodada antes de gerar outro.');
+      setTimeout(() => setShowToast(''), 3000);
+      return;
+    }
+
+    setIsGenerating(true);
     try {
-      onGenerateCard(allPlayers, selectedCategoria, numPalavras);
+      await onGenerateCard(allPlayers, selectedCategoria, numPalavras);
       setShowToast('Card gerado! 🎉');
       setTimeout(() => setShowToast(''), 3000);
     } catch (error) {
-      setShowToast(error.message);
+      setShowToast(error.message || 'Erro ao gerar card');
       setTimeout(() => setShowToast(''), 3000);
+    } finally {
+      setIsGenerating(false);
     }
   };
+
+  if (hasActiveCard) {
+    return (
+      <div className="max-w-4xl mx-auto px-6">
+        <div className="bg-orange-50 rounded-2xl shadow-lg p-8 text-center border-2 border-orange-200">
+          <Lock className="w-16 h-16 text-orange-600 mx-auto mb-4" />
+          <h3 className="text-2xl font-bold text-orange-800 mb-2">Rodada em Andamento</h3>
+          <p className="text-orange-700">
+            Finalize a rodada atual antes de gerar um novo card.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-6">
       {showToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-white border-2 border-purple-200 shadow-lg rounded-lg px-6 py-3 z-50">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-white border-2 border-purple-200 shadow-lg rounded-lg px-6 py-3 z-50 animate-[slideDown_0.3s_ease-out]">
           <p className="text-sm font-medium text-slate-800">{showToast}</p>
         </div>
       )}
@@ -649,10 +684,10 @@ function GameSetup({ onGenerateCard, allPlayers }) {
 
       <button
         onClick={handleGenerate}
-        disabled={!selectedCategoria}
+        disabled={!selectedCategoria || isGenerating}
         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        🎲 Gerar Card
+        {isGenerating ? '⏳ Gerando...' : '🎲 Gerar Card'}
       </button>
     </div>
   );
@@ -680,11 +715,26 @@ export default function ImagemAcaoGame() {
     const playersRef = ref(database, 'players');
     const unsubscribe = onValue(playersRef, (snapshot) => {
       const players = snapshot.val() || {};
-      setOnlinePlayers(players);
+      
+      // Filtrar jogadores inativos (mais de 2 minutos sem heartbeat)
+      const now = Date.now();
+      const activePlayers = {};
+      
+      Object.entries(players).forEach(([id, player]) => {
+        const lastSeen = player.lastSeen || player.timestamp || 0;
+        if (now - lastSeen < 120000) { // 2 minutos
+          activePlayers[id] = player;
+        } else {
+          // Remove jogadores inativos
+          remove(ref(database, `players/${id}`)).catch(console.error);
+        }
+      });
+      
+      setOnlinePlayers(activePlayers);
 
       // Extract all player names
       const names = [];
-      Object.values(players).forEach(player => {
+      Object.values(activePlayers).forEach(player => {
         if (player.role === 'player' && player.names) {
           names.push(...player.names);
         }
@@ -694,6 +744,18 @@ export default function ImagemAcaoGame() {
 
     return () => unsubscribe();
   }, []);
+
+  // Cleanup ao desmontar componente
+  useEffect(() => {
+    return () => {
+      if (window.heartbeatInterval) {
+        clearInterval(window.heartbeatInterval);
+      }
+      if (userId) {
+        remove(ref(database, `players/${userId}`)).catch(console.error);
+      }
+    };
+  }, [userId]);
 
   // Listen to game state
   useEffect(() => {
@@ -713,22 +775,54 @@ export default function ImagemAcaoGame() {
 
   const handleLogin = async (role, names) => {
     const newUserId = push(ref(database, 'players')).key;
-    await set(ref(database, `players/${newUserId}`), {
+    const playerRef = ref(database, `players/${newUserId}`);
+    
+    // Adiciona o jogador
+    await set(playerRef, {
       role,
       names,
-      timestamp: serverTimestamp()
+      timestamp: Date.now(),
+      lastSeen: Date.now()
     });
+
+    // Configura remoção automática ao desconectar
+    const { onDisconnect } = await import('firebase/database');
+    await onDisconnect(playerRef).remove();
 
     setUserId(newUserId);
     setUserRole(role);
     setUserNames(names);
     setIsLoggedIn(true);
+
+    // Heartbeat para manter conexão ativa
+    const heartbeatInterval = setInterval(async () => {
+      try {
+        await update(playerRef, { lastSeen: Date.now() });
+      } catch (error) {
+        console.error('Heartbeat failed:', error);
+      }
+    }, 30000); // A cada 30 segundos
+
+    // Salva o interval para limpar depois
+    window.heartbeatInterval = heartbeatInterval;
   };
 
   const handleLogout = async () => {
-    if (userId) {
-      await remove(ref(database, `players/${userId}`));
+    // Limpar heartbeat
+    if (window.heartbeatInterval) {
+      clearInterval(window.heartbeatInterval);
+      window.heartbeatInterval = null;
     }
+
+    // Remover do Firebase
+    if (userId) {
+      try {
+        await remove(ref(database, `players/${userId}`));
+      } catch (error) {
+        console.error('Erro ao fazer logout:', error);
+      }
+    }
+    
     setIsLoggedIn(false);
     setUserRole('');
     setUserNames([]);
@@ -736,42 +830,55 @@ export default function ImagemAcaoGame() {
   };
 
   const generateCard = useCallback(async (jogadores, categoria, numPalavras) => {
-    const palavras = [];
-    for (let i = 0; i < numPalavras; i++) {
-      const palavra = generateWord(categoria, usedWords[categoria]);
-      palavras.push(palavra);
+    try {
+      const palavras = [];
+      const currentUsedWords = usedWords[categoria] || [];
+      
+      for (let i = 0; i < numPalavras; i++) {
+        const palavra = generateWord(categoria, currentUsedWords);
+        palavras.push(palavra);
+        currentUsedWords.push(palavra);
+      }
+
+      const pontuacao = generateScore();
+      const currentRound = (gameState?.round || 0) + 1;
+      const card_id = generateCardId(categoria, currentRound);
+
+      const newCard = {
+        timestamp: Date.now(),
+        round: currentRound,
+        jogadores: jogadores.length > 0 ? jogadores : allPlayers,
+        categoria,
+        palavras,
+        palavrasUsadas: {},
+        pontuacao,
+        card_id,
+        admin: ADMIN_NAME,
+      };
+
+      // Atualizar palavras usadas
+      const newUsedWords = { ...usedWords };
+      if (!newUsedWords[categoria]) {
+        newUsedWords[categoria] = [];
+      }
+      newUsedWords[categoria] = [...newUsedWords[categoria], ...palavras];
+
+      // Atualizar no Firebase
+      await update(ref(database, 'gameState'), {
+        currentCard: newCard,
+        round: currentRound,
+        usedWords: newUsedWords,
+        timerValue: ROUND_DURATION_SECONDS,
+        timerRunning: false,
+        timerStartTime: null
+      });
+
+      console.log('Card gerado com sucesso:', newCard);
+    } catch (error) {
+      console.error('Erro ao gerar card:', error);
+      throw error;
     }
-
-    const pontuacao = generateScore();
-    const card_id = generateCardId(categoria, gameState?.round || 1);
-
-    const newCard = {
-      timestamp: Date.now(),
-      round: (gameState?.round || 0) + 1,
-      jogadores,
-      categoria,
-      palavras,
-      palavrasUsadas: {},
-      pontuacao,
-      card_id,
-      admin: ADMIN_NAME,
-    };
-
-    const newUsedWords = { ...usedWords };
-    palavras.forEach(p => {
-      if (!newUsedWords[categoria]) newUsedWords[categoria] = [];
-      newUsedWords[categoria].push(p);
-    });
-
-    await update(ref(database, 'gameState'), {
-      currentCard: newCard,
-      round: newCard.round,
-      usedWords: newUsedWords,
-      timerValue: ROUND_DURATION_SECONDS,
-      timerRunning: false,
-      timerStartTime: null
-    });
-  }, [usedWords, gameState]);
+  }, [usedWords, gameState, allPlayers]);
 
   const handleToggleTimer = async () => {
     const newRunning = !gameState?.timerRunning;
@@ -784,38 +891,46 @@ export default function ImagemAcaoGame() {
   const handleRegenerateWord = async () => {
     if (!gameState?.currentCard) return;
 
-    const card = gameState.currentCard;
-    const newPalavras = [];
+    try {
+      const card = gameState.currentCard;
+      const currentUsedWords = usedWords[card.categoria] || [];
+      
+      // Remove palavras antigas da lista de usadas
+      const wordsToRemove = card.palavras;
+      const filteredUsedWords = currentUsedWords.filter(w => !wordsToRemove.includes(w));
+      
+      // Gera novas palavras
+      const newPalavras = [];
+      for (let i = 0; i < card.palavras.length; i++) {
+        const palavra = generateWord(card.categoria, [...filteredUsedWords, ...newPalavras]);
+        newPalavras.push(palavra);
+      }
 
-    for (let i = 0; i < card.palavras.length; i++) {
-      const palavra = generateWord(card.categoria, usedWords[card.categoria]);
-      newPalavras.push(palavra);
+      const newPontuacao = generateScore();
+      const newCardId = generateCardId(card.categoria, card.round);
+
+      const updatedCard = {
+        ...card,
+        palavras: newPalavras,
+        pontuacao: newPontuacao,
+        card_id: newCardId,
+        palavrasUsadas: {}
+      };
+
+      // Atualiza palavras usadas
+      const newUsedWords = { ...usedWords };
+      newUsedWords[card.categoria] = [...filteredUsedWords, ...newPalavras];
+
+      await update(ref(database, 'gameState'), {
+        currentCard: updatedCard,
+        usedWords: newUsedWords,
+        timerValue: ROUND_DURATION_SECONDS,
+        timerRunning: false,
+        timerStartTime: null
+      });
+    } catch (error) {
+      console.error('Erro ao regenerar palavra:', error);
     }
-
-    const newPontuacao = generateScore();
-    const newCardId = generateCardId(card.categoria, card.round);
-
-    const updatedCard = {
-      ...card,
-      palavras: newPalavras,
-      pontuacao: newPontuacao,
-      card_id: newCardId,
-      palavrasUsadas: {}
-    };
-
-    const newUsedWords = { ...usedWords };
-    newPalavras.forEach(p => {
-      if (!newUsedWords[card.categoria]) newUsedWords[card.categoria] = [];
-      newUsedWords[card.categoria].push(p);
-    });
-
-    await update(ref(database, 'gameState'), {
-      currentCard: updatedCard,
-      usedWords: newUsedWords,
-      timerValue: ROUND_DURATION_SECONDS,
-      timerRunning: false,
-      timerStartTime: null
-    });
   };
 
   const handleMarkWordAsUsed = async (wordIndex) => {
@@ -839,6 +954,16 @@ export default function ImagemAcaoGame() {
       timerRunning: false,
       timerStartTime: null
     });
+  };
+
+  const handleClearDuplicates = async () => {
+    const playersRef = ref(database, 'players');
+    try {
+      await remove(playersRef);
+      console.log('Todas as conexões limpas');
+    } catch (error) {
+      console.error('Erro ao limpar duplicatas:', error);
+    }
   };
 
   if (!isLoggedIn) {
@@ -889,7 +1014,11 @@ export default function ImagemAcaoGame() {
           <div className="grid md:grid-cols-[1fr_300px] gap-6">
             <div>
               {!gameState?.currentCard && (userRole === 'admin' || userRole === 'player') && (
-                <GameSetup onGenerateCard={generateCard} allPlayers={allPlayers} />
+                <GameSetup 
+                  onGenerateCard={generateCard} 
+                  allPlayers={allPlayers}
+                  hasActiveCard={!!gameState?.currentCard}
+                />
               )}
 
               {gameState?.currentCard && (
@@ -927,7 +1056,10 @@ export default function ImagemAcaoGame() {
             </div>
 
             <div className="space-y-4">
-              <OnlinePlayersPanel players={onlinePlayers} />
+              <OnlinePlayersPanel 
+                players={onlinePlayers}
+                onClearDuplicates={userRole === 'admin' ? handleClearDuplicates : null}
+              />
             </div>
           </div>
         </div>
